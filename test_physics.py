@@ -12,6 +12,10 @@ class TestPhysics(unittest.TestCase):
 
     def test_calculate_pressure(self):
         self.assertEqual(physics.calculate_pressure(20), 196000.0 )
-    def calculate_acceleration(self):
-        self.assertEqual(physics.calculate_acceleration(20),34)
+    
+    def test_calculate_acceleration(self):
+        self.assertEqual(physics.calculate_acceleration(20, 19),1.0526315789473684)
+
+    def test_calculate_angular_acceleration(self):
+        self.assertEqual(physics.calculate_angular_acceleration(1,-3), 4)
     
