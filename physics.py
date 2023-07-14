@@ -1,4 +1,5 @@
 
+import numpy as np
 buoyancy = 0
 g = 9.8 #m/s^2
 pressure =0
@@ -66,10 +67,13 @@ Calculates torque of an object but throws an error if magnitude is less than zer
 '''
 
 def calculate_torque(F_magnitude, F_direction, r):
-     if F_magnitude < 0:
+     if F_magnitude <= 0:
           raise ValueError("Magnitude cannote be negative")
+     elif r<= 0:
+          raise ValueError("radius is not negative")
      else:
-          Torque = F_magnitude * F_direction * abs(r)
+          x = F_magnitude * np.sin(F_direction)
+          Torque = x * r
 
           return Torque
      
@@ -83,6 +87,32 @@ def calculate_moment_of_inertia(mass,r):
      else:
         I = mass * abs(r*r)
         return I
-# def calculate_auv_acceleration(F_magnitude, F_angle,volume = 0.1,mass = 100, thruster_distance = 0.5):
      
-     
+     '''
+     used trig to solve for components of F
+     used that to calculate acceleration with the previous function 
+     put each x and y acceleratoin values into an array
+     '''
+def calculate_auv_acceleration(F_magnitude, F_angle,volume = 0.1,mass = 100, thruster_distance = 0.5):
+     Fy = F_magnitude * np.sin(F_angle)
+     Fx = F_magnitude * np.cos(F_angle)
+     Ay = calculate_acceleration(Fy, mass)
+     Ax = calculate_acceleration(Fx, mass)
+     auv_acceleration = [Ax,Ay]
+     return auv_acceleration
+
+'''
+changed degrees to radians 
+calculated torque and assigned it to T 
+used the T to calculate angular acceleration with the function 
+'''
+def calculate_auv_angular_acceleration(F_magnitude, F_angle, inertia = 1, thruster_distance =0.5):
+     F_angle = (F_angle *180)/ np.pi
+     T = calculate_torque(F_magnitude, F_angle, thruster_distance)
+     auv_angular_acceleration = calculate_angular_acceleration(T, inertia)
+     return auv_angular_acceleration
+
+def calculate_auv2_acceleration(T, alpha, mass = 100):
+     T = [[np.cos(alpha), np.cos(alpha), -np.cos(alpha), -np.cos(alpha)],
+          [np.sin(alpha), -np.sin(alpha), -np.sin(alpha), np.sin(alpha)]]
+
