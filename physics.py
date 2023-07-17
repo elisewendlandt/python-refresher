@@ -1,5 +1,5 @@
-
 import numpy as np
+import matplotlib.pyplot as plt
 buoyancy = 0
 g = 9.8 #m/s^2
 pressure =0
@@ -112,29 +112,78 @@ def calculate_auv_angular_acceleration(F_magnitude, F_angle, inertia = 1, thrust
      auv_angular_acceleration = calculate_angular_acceleration(T, inertia)
      return auv_angular_acceleration
 
-def calculate_auv2_acceleration(T, alpha, mass = 100):
-     x = [[np.cos(alpha), np.cos(alpha), -np.cos(alpha), -np.cos(alpha)],
-          [np.sin(alpha), -np.sin(alpha), -np.sin(alpha), np.sin(alpha)]]
-     F = np.matmul(x, T)
-     Ax = F[0,0]/mass
-     Ay = F[1,0]/mass
-     auv2_acceleration = [Ax, Ay]
+def calculate_auv2_acceleration(T, alpha, theta, mass = 100):
+     if mass <= 0:
+          raise ValueError("mass cannot be negative")
+
+     x = np.array[[[np.cos(alpha), np.cos(alpha), -np.cos(alpha), -np.cos(alpha)],
+          [np.sin(alpha), -np.sin(alpha), -np.sin(alpha), np.sin(alpha)]] ]
+     y = np.array[[[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)]] ]
+     z = np.matmul(x, T)
+     F = np.matmul(z,y)
+     auv2_acceleration = calculate_acceleration(F,mass)
      return auv2_acceleration
 
 def calculate_auv2__angular_acceleration(T, alpha, Latitude, Longitude, inertia = 100):
-
      if Latitude <= 0 :
           raise ValueError("Latitude cannot be negative")
-     elif Longitude <= 0 :
+     if Longitude <= 0 :
           raise ValueError("Longitude cannot be negative")
-     x = [[np.cos(alpha), np.cos(alpha), -np.cos(alpha), -np.cos(alpha)],
-          [np.sin(alpha), -np.sin(alpha), -np.sin(alpha), np.sin(alpha)]]
+     if inertia <= 0:
+          raise ValueError("inertia cannot be negative")
+     x = np.array[[[np.cos(alpha), np.cos(alpha), -np.cos(alpha), -np.cos(alpha)],
+          [np.sin(alpha), -np.sin(alpha), -np.sin(alpha), np.sin(alpha)]] ]
      F = np.matmul(x, T)
      Fnet = F[0] + F[1]
-     rx = np.sqrt((Latitude*Latitude) + (Longitude*Longitude))
+     rx = np.sqrt(np.power(Latitude,2) + np.power(Longitude,2))
      tau = Fnet * rx
      auv2_angular_acceleration = calculate_angular_acceleration(tau,rx)
      return auv2_angular_acceleration
 
+def simulate_auv2_motion(T,alpha, L, l, inertia, dt =0.1,t_final =10, x0 =0, y0 =10, theta0 = 0, mass =100):
+     time = np.arange(0, t_final, dt)
+     x = np.zeros_like(time)
+     x[0] = x0
+     y = np.zeros_like(time)
+     y[0] = y0
+     theta = np.zeros_like(time)
+     theta[0] = theta0
+     v = np.zeros_like(time)
+     omega = np.zeros_like(time)
+     a = np.zeros_like(time)
+     aa = np.zeros_like(time)
+     for i in range(1, len(time)):
+          a[i][0] = a[i-1][0] + calculate_auv2_acceleration(T,alpha, theta[i-1], mass[0])
+          a[i][1] = a[i-1][1] + calculate_auv2_acceleration(T,alpha, theta[i-1], mass[1])
+          v[i][0] = v[i-1][0] + a[i-1][0]*dt
+          v[i][1] = v[i-1][1] + a[i-1][1]*dt
+          x[i] = x[i-1] + v[i-1][0] * dt + 0.5*a[i-1][0]*np.power(dt,2)
+          y[i] = y[i-1] + v[i-1][1] * dt + 0.5*a[i-1][1]*np.power(dt,2)
 
-
+          aa[i] = aa[i-1] + calculate_auv2__angular_acceleration(T, alpha, L, l, inertia) 
+          omega[i] = omega[i-1] + aa[i-1]*dt
+          theta[i] = theta[i-1] + omega[i-1]*dt + 0.5*aa[i-1]*np.power(dt, 2)
+          ret = (time,x, y, theta, omega, a, v)
+          return ret
+def plot_auv2_motion(time,x,y,theta,v, omega, a):
+     plt.plot(time, x, label="X:Position")
+     plt.plot(time, y, label="Y:Position")
+     vx = np.zeros_like(time)
+     vy = np.zeros_like(time)
+     ax = np.zeros_like(time)
+     ay = np.zeros_like(time)
+     for i in range (1,len(v)):
+         vx[i] = v[i][0]
+         vy[i] = v[i][1]
+         ax[i] = a[i][0]
+         ay[i] = a[i][1]
+     plt.plot(time, v[i][0], label="X:Velocity")
+     plt.plot(time, v[i][1], label="Y:Velocity")
+     plt.plot(time, a[i][0], label="X:Acceleration")
+     plt.plot(time, a[i][1], label="Y:Acceleration")
+     plt.plot(time, omega, label="Angular Velocity")
+     plt.plot(time, theta, label="Angle")
+     plt.xlabel("Time (s)")
+     plt.ylabel("Position (m), Velocity (m/s), Acceleration (m/s^2)")
+     plt.legend()
+     plt.show()
