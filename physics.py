@@ -113,6 +113,28 @@ def calculate_auv_angular_acceleration(F_magnitude, F_angle, inertia = 1, thrust
      return auv_angular_acceleration
 
 def calculate_auv2_acceleration(T, alpha, mass = 100):
-     T = [[np.cos(alpha), np.cos(alpha), -np.cos(alpha), -np.cos(alpha)],
+     x = [[np.cos(alpha), np.cos(alpha), -np.cos(alpha), -np.cos(alpha)],
           [np.sin(alpha), -np.sin(alpha), -np.sin(alpha), np.sin(alpha)]]
+     F = np.matmul(x, T)
+     Ax = F[0,0]/mass
+     Ay = F[1,0]/mass
+     auv2_acceleration = [Ax, Ay]
+     return auv2_acceleration
+
+def calculate_auv2__angular_acceleration(T, alpha, Latitude, Longitude, inertia = 100):
+
+     if Latitude <= 0 :
+          raise ValueError("Latitude cannot be negative")
+     elif Longitude <= 0 :
+          raise ValueError("Longitude cannot be negative")
+     x = [[np.cos(alpha), np.cos(alpha), -np.cos(alpha), -np.cos(alpha)],
+          [np.sin(alpha), -np.sin(alpha), -np.sin(alpha), np.sin(alpha)]]
+     F = np.matmul(x, T)
+     Fnet = F[0] + F[1]
+     rx = np.sqrt((Latitude*Latitude) + (Longitude*Longitude))
+     tau = Fnet * rx
+     auv2_angular_acceleration = calculate_angular_acceleration(tau,rx)
+     return auv2_angular_acceleration
+
+
 
