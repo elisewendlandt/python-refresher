@@ -33,9 +33,6 @@ class TestPhysics(unittest.TestCase):
         self.assertEqual(physics.calculate_auv_angular_acceleration(45,30), -9.219865467922835)
     
     def test_calculate_auv2_acceleration(self):
-        self.assertEqual(physics.calculate_auv2_acceleration(60, 15), 99)
-    
-    def test_calculate_auv2_acceleration(self):
         self.assertEqual(physics.calculate_auv2_acceleration([3, 3, 3, 3], 10, 10), [0, 0])
         self.assertEqual(physics.calculate_auv2_acceleration([5, 6, 2, 9], 98, 0.76), [-0.0237, -0.02493])
 
