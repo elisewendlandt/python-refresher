@@ -50,13 +50,15 @@ def calculate_pressure(depth):
 Calculates acceleration 
 '''
 def calculate_acceleration(Force, mass):
+     if mass < 0:
+          raise ValueError("mass cannot be negative")
      acceleration = Force/mass
      return acceleration
 '''
 calculates angular acceleration with the equation and throws an error if inertia is negative 
 '''
 def calculate_angular_acceleration(tau, inertia):
-     if inertia < 0:
+     if inertia <= 0:
           raise ValueError("Inertia cannot be negative")
      else:
         angular_acceleration = tau/inertia
@@ -66,79 +68,86 @@ def calculate_angular_acceleration(tau, inertia):
 Calculates torque of an object but throws an error if magnitude is less than zero 
 '''
 
-def calculate_torque(F_magnitude, F_direction, r):
+def calculate_torque(F_magnitude, F_direction_degrees, r):
      if F_magnitude <= 0:
           raise ValueError("Magnitude cannote be negative")
-     elif r<= 0:
+     if r<= 0:
           raise ValueError("radius is not negative")
      else:
-          x = F_magnitude * np.sin(F_direction)
-          Torque = x * r
 
-          return Torque
+          F_direction_radians = (F_direction_degrees*np.pi)/180
+          torque= F_magnitude * np.sin(F_direction_radians)*r
+
+          return torque
      
      '''
      Calculates the Inertia of an object using its mass and absolute value of radius 
      
      '''
 def calculate_moment_of_inertia(mass,r):
-     if (mass < 0): 
+     if mass <= 0 or r<=0: 
             raise ValueError("Mass cannot be negative")
      else:
-        I = mass * abs(r*r)
-        return I
+        moment_of_inertia = mass*np.power(r,2)
+        return moment_of_inertia
      
      '''
      used trig to solve for components of F
      used that to calculate acceleration with the previous function 
      put each x and y acceleratoin values into an array
      '''
-def calculate_auv_acceleration(F_magnitude, F_angle,volume = 0.1,mass = 100, thruster_distance = 0.5):
-     Fy = F_magnitude * np.sin(F_angle)
-     Fx = F_magnitude * np.cos(F_angle)
-     Ay = calculate_acceleration(Fy, mass)
-     Ax = calculate_acceleration(Fx, mass)
-     auv_acceleration = [Ax,Ay]
-     return auv_acceleration
+def calculate_auv_acceleration(F_magnitude, F_angle_radians,volume = 0.1,mass = 100, thruster_distance = 0.5):
+     if F_magnitude<=0 or mass<=0 or volume<=0 or thruster_distance <=0:
+          raise ValueError("Invalid cannot be negative")
+     F_y = F_magnitude * np.sin(F_angle_radians)
+     F_x = F_magnitude * np.cos(F_angle_radians)
+     acceleration_y = calculate_acceleration(F_y, mass)
+     acceleration_x = calculate_acceleration(F_x, mass)
+     net_acceleration = np.array([acceleration_x, acceleration_y])
+     return net_acceleration
 
 '''
 changed degrees to radians 
 calculated torque and assigned it to T 
 used the T to calculate angular acceleration with the function 
 '''
-def calculate_auv_angular_acceleration(F_magnitude, F_angle, inertia = 1, thruster_distance =0.5):
-     F_angle = (F_angle *180)/ np.pi
-     T = calculate_torque(F_magnitude, F_angle, thruster_distance)
-     auv_angular_acceleration = calculate_angular_acceleration(T, inertia)
-     return auv_angular_acceleration
+def calculate_auv_angular_acceleration(F_magnitude, F_angle_radians, inertia = 1, thruster_distance =0.5):
+     if F_magnitude <=0 or inertia <=0 or thruster_distance<=0:
+          raise ValueError("invalid values")
+     perpendicular_force = F_magnitude*np.sin(F_angle_radians)
+     angular_acceleration = calculate_angular_acceleration(perpendicular_force*thruster_distance, inertia)
+     return angular_acceleration
 
 def calculate_auv2_acceleration(T, alpha, theta, mass = 100):
+     if type(T) != np.ndarray:
+          raise ValueError("T has to be an ndarray")
      if mass <= 0:
           raise ValueError("mass cannot be negative")
 
-     x = np.array([[np.cos(alpha), np.cos(alpha), -np.cos(alpha), -np.cos(alpha)],
+     components = np.array([[np.cos(alpha), np.cos(alpha), -np.cos(alpha), -np.cos(alpha)],
           [np.sin(alpha), -np.sin(alpha), -np.sin(alpha), np.sin(alpha)] ])
-     y = np.array[[[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)]] ]
-     z = np.matmul(x, T)
-     F = np.matmul(z,y)
-     auv2_acceleration = calculate_acceleration(F,mass)
-     return auv2_acceleration
+     net_force_prime = np.matmul(components,T)
+     rotation_matrix = np.array([[np.cos(theta), -np.sin(theta),][np.sin(theta),np.cos(theta)]])
+     net_force = np.matmul(rotation_matrix, net_force_prime)
+     acceleration_x = net_force[0]/mass
+     acceleration_y = net_force[1]/mass
+     net_acceleration = np.array([acceleration_x,acceleration_y])
+     return net_acceleration
 
-def calculate_auv2__angular_acceleration(T, alpha, Latitude, Longitude, inertia = 100):
-     if Latitude <= 0 :
+def calculate_auv2__angular_acceleration(T, alpha, L, l, inertia = 100):
+     if type(T) != np.ndarray:
+          raise ValueError("T has to be an ndarray")
+     if L <= 0 :
           raise ValueError("Latitude cannot be negative")
-     if Longitude <= 0 :
+     if l <= 0 :
           raise ValueError("Longitude cannot be negative")
      if inertia <= 0:
           raise ValueError("inertia cannot be negative")
-     x = np.array[[[np.cos(alpha), np.cos(alpha), -np.cos(alpha), -np.cos(alpha)],
-          [np.sin(alpha), -np.sin(alpha), -np.sin(alpha), np.sin(alpha)]] ]
-     F = np.matmul(x, T)
-     Fnet = F[0] + F[1]
-     rx = np.sqrt(np.power(Latitude,2) + np.power(Longitude,2))
-     tau = Fnet * rx
-     auv2_angular_acceleration = calculate_angular_acceleration(tau,rx)
-     return auv2_angular_acceleration
+     
+     components = np.array([L*np.sin(alpha) + l*np.cos(alpha), -L*np.sin(alpha)-l*np.cos(alpha),L*np.sin(alpha) + l*np.cos(alpha), -L*np.sin(alpha)-l*np.cos(alpha)])
+     net_torque = np.matmul(components,T)
+     angular_acceleration = calculate_angular_acceleration(net_torque,inertia)
+     return angular_acceleration
 
 def simulate_auv2_motion(T,alpha, L, l, inertia, dt =0.1,t_final =10, x0 =0, y0 =10, theta0 = 0, mass =100):
      time = np.arange(0, t_final, dt)
@@ -148,42 +157,46 @@ def simulate_auv2_motion(T,alpha, L, l, inertia, dt =0.1,t_final =10, x0 =0, y0 
      y[0] = y0
      theta = np.zeros_like(time)
      theta[0] = theta0
-     v = np.zeros_like(time)
+     v = np.zeros(shape =(len(time),2))
      omega = np.zeros_like(time)
-     linear_acceleration = np.zeros_like(time)
+     linear_acceleration = np.zeros(shape =(len(time),2))
      angular_acceleration = np.zeros_like(time)
      for i in range(1, len(time)):
-          linear_acceleration[i][0] = linear_acceleration[i-1][0] + calculate_auv2_acceleration(T,alpha, theta[i-1], mass[0])
-          linear_acceleration[i][1] = linear_acceleration[i-1][1] + calculate_auv2_acceleration(T,alpha, theta[i-1], mass[1])
+          linear_acceleration[i][0] = calculate_auv2_acceleration(T,alpha, theta[i], mass[0])
+          linear_acceleration[i][1] = calculate_auv2_acceleration(T,alpha, theta[i], mass[1])
           v[i][0] = v[i-1][0] + linear_acceleration[i-1][0]*dt
           v[i][1] = v[i-1][1] + linear_acceleration[i-1][1]*dt
           x[i] = x[i-1] + v[i-1][0] * dt + 0.5*linear_acceleration[i-1][0]*np.power(dt,2)
           y[i] = y[i-1] + v[i-1][1] * dt + 0.5*linear_acceleration[i-1][1]*np.power(dt,2)
 
-          angular_acceleration[i] = angular_acceleration[i-1] + calculate_auv2__angular_acceleration(T, alpha, L, l, inertia) 
+          angular_acceleration[i] = calculate_auv2__angular_acceleration(T, alpha, L, l, inertia) 
           omega[i] = omega[i-1] + angular_acceleration[i-1]*dt
           theta[i] = np.mod((theta[i-1] + omega[i-1]*dt + 0.5*angular_acceleration[i-1]*np.power(dt, 2)), 2*np.pi)
           ret = (time,x, y, theta, omega, linear_acceleration, v)
           return ret
+
 def plot_auv2_motion(time,x,y,theta,v, omega, a):
      plt.plot(time, x, label="X:Position")
      plt.plot(time, y, label="Y:Position")
+     plt.plot(time, theta, label="Angle Displacement")
      vx = np.zeros_like(time)
      vy = np.zeros_like(time)
      ax = np.zeros_like(time)
      ay = np.zeros_like(time)
-     for i in range (1,len(v)):
+     for i in range (0,len(v)):
          vx[i] = v[i][0]
          vy[i] = v[i][1]
          ax[i] = a[i][0]
          ay[i] = a[i][1]
-     plt.plot(time, v[i][0], label="X:Velocity")
-     plt.plot(time, v[i][1], label="Y:Velocity")
-     plt.plot(time, a[i][0], label="X:Acceleration")
-     plt.plot(time, a[i][1], label="Y:Acceleration")
      plt.plot(time, omega, label="Angular Velocity")
-     plt.plot(time, theta, label="Angle")
+     plt.plot(time, vx, label="X:Velocity")
+     plt.plot(time, vy, label="Y:Velocity")
+     plt.plot(time, ax, label="X:Acceleration")
+     plt.plot(time, ay, label="Y:Acceleration")
      plt.xlabel("Time (s)")
      plt.ylabel("Position (m), Velocity (m/s), Acceleration (m/s^2)")
      plt.legend()
      plt.show()
+
+     (time,x,y,theta,v,omega,a) = simulate_auv2_motion(np.array([1,3,6,5]),4,2,2)
+     plot_auv2_motion(time,x,y,theta,v,omega,a)
