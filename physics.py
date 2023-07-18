@@ -116,8 +116,8 @@ def calculate_auv2_acceleration(T, alpha, theta, mass = 100):
      if mass <= 0:
           raise ValueError("mass cannot be negative")
 
-     x = np.array[[[np.cos(alpha), np.cos(alpha), -np.cos(alpha), -np.cos(alpha)],
-          [np.sin(alpha), -np.sin(alpha), -np.sin(alpha), np.sin(alpha)]] ]
+     x = np.array([[np.cos(alpha), np.cos(alpha), -np.cos(alpha), -np.cos(alpha)],
+          [np.sin(alpha), -np.sin(alpha), -np.sin(alpha), np.sin(alpha)] ])
      y = np.array[[[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)]] ]
      z = np.matmul(x, T)
      F = np.matmul(z,y)
@@ -150,20 +150,20 @@ def simulate_auv2_motion(T,alpha, L, l, inertia, dt =0.1,t_final =10, x0 =0, y0 
      theta[0] = theta0
      v = np.zeros_like(time)
      omega = np.zeros_like(time)
-     a = np.zeros_like(time)
-     aa = np.zeros_like(time)
+     linear_acceleration = np.zeros_like(time)
+     angular_acceleration = np.zeros_like(time)
      for i in range(1, len(time)):
-          a[i][0] = a[i-1][0] + calculate_auv2_acceleration(T,alpha, theta[i-1], mass[0])
-          a[i][1] = a[i-1][1] + calculate_auv2_acceleration(T,alpha, theta[i-1], mass[1])
-          v[i][0] = v[i-1][0] + a[i-1][0]*dt
-          v[i][1] = v[i-1][1] + a[i-1][1]*dt
-          x[i] = x[i-1] + v[i-1][0] * dt + 0.5*a[i-1][0]*np.power(dt,2)
-          y[i] = y[i-1] + v[i-1][1] * dt + 0.5*a[i-1][1]*np.power(dt,2)
+          linear_acceleration[i][0] = linear_acceleration[i-1][0] + calculate_auv2_acceleration(T,alpha, theta[i-1], mass[0])
+          linear_acceleration[i][1] = linear_acceleration[i-1][1] + calculate_auv2_acceleration(T,alpha, theta[i-1], mass[1])
+          v[i][0] = v[i-1][0] + linear_acceleration[i-1][0]*dt
+          v[i][1] = v[i-1][1] + linear_acceleration[i-1][1]*dt
+          x[i] = x[i-1] + v[i-1][0] * dt + 0.5*linear_acceleration[i-1][0]*np.power(dt,2)
+          y[i] = y[i-1] + v[i-1][1] * dt + 0.5*linear_acceleration[i-1][1]*np.power(dt,2)
 
-          aa[i] = aa[i-1] + calculate_auv2__angular_acceleration(T, alpha, L, l, inertia) 
-          omega[i] = omega[i-1] + aa[i-1]*dt
-          theta[i] = theta[i-1] + omega[i-1]*dt + 0.5*aa[i-1]*np.power(dt, 2)
-          ret = (time,x, y, theta, omega, a, v)
+          angular_acceleration[i] = angular_acceleration[i-1] + calculate_auv2__angular_acceleration(T, alpha, L, l, inertia) 
+          omega[i] = omega[i-1] + angular_acceleration[i-1]*dt
+          theta[i] = np.mod((theta[i-1] + omega[i-1]*dt + 0.5*angular_acceleration[i-1]*np.power(dt, 2)), 2*np.pi)
+          ret = (time,x, y, theta, omega, linear_acceleration, v)
           return ret
 def plot_auv2_motion(time,x,y,theta,v, omega, a):
      plt.plot(time, x, label="X:Position")
